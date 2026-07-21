@@ -1,9 +1,19 @@
-import { mount } from 'svelte'
-import './app.css'
-import App from './App.svelte'
+import { mount } from 'svelte';
 
-const app = mount(App, {
-  target: document.getElementById('app'),
-})
+import App from './App.svelte';
 
-export default app
+import './app.css';
+import './phase2.css';
+
+const target =
+  document.getElementById('app');
+
+if (!target) {
+  throw new Error(
+    'Application root element was not found.'
+  );
+}
+
+mount(App, {
+  target
+});
