@@ -1,0 +1,662 @@
+:root {
+  --motion-fast:
+    160ms cubic-bezier(.2, .8, .2, 1);
+
+  --motion-normal:
+    320ms cubic-bezier(.2, .8, .2, 1);
+
+  --motion-player:
+    380ms cubic-bezier(.16, .82, .24, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Lightweight general interactions */
+
+button {
+  transition:
+    transform var(--motion-fast),
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast),
+    opacity var(--motion-fast);
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+.topbar {
+  backdrop-filter: blur(10px);
+
+  animation:
+    topbarEnter
+    360ms
+    cubic-bezier(.2, .8, .2, 1)
+    both;
+}
+
+@keyframes topbarEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hero and navigation */
+
+.hero {
+  animation:
+    heroEnter
+    480ms
+    cubic-bezier(.16, .82, .24, 1)
+    both;
+}
+
+.hero h1,
+.hero > p,
+.hero-features {
+  animation:
+    heroContentEnter
+    480ms
+    cubic-bezier(.2, .8, .2, 1)
+    both;
+}
+
+.hero > p {
+  animation-delay: 55ms;
+}
+
+.hero-features {
+  animation-delay: 100ms;
+}
+
+@keyframes heroEnter {
+  from {
+    opacity: 0;
+    transform:
+      translateY(18px)
+      scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+@keyframes heroContentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tabs {
+  animation:
+    tabsEnter
+    380ms
+    90ms
+    cubic-bezier(.2, .8, .2, 1)
+    both;
+}
+
+.tabs button {
+  position: relative;
+  overflow: hidden;
+
+  transition:
+    transform var(--motion-fast),
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.tabs button.active {
+  box-shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.25);
+}
+
+@keyframes tabsEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-header {
+  animation:
+    sectionEnter
+    360ms
+    cubic-bezier(.2, .8, .2, 1)
+    both;
+}
+
+@keyframes sectionEnter {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Grid performance and animations */
+
+.music-grid {
+  contain: layout style;
+
+  animation:
+    gridEnter
+    280ms
+    ease-out
+    both;
+}
+
+@keyframes gridEnter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.music-card {
+  content-visibility: auto;
+  contain:
+    layout
+    paint
+    style;
+
+  contain-intrinsic-size:
+    auto 265px;
+
+  will-change:
+    transform,
+    opacity;
+
+  animation:
+    cardEnter
+    440ms
+    cubic-bezier(.16, .82, .24, 1)
+    both;
+
+  animation-delay:
+    calc(
+      var(--card-index, 0) * 24ms
+    );
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(18px)
+      scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+.artwork {
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+.artwork img {
+  opacity: 0;
+
+  transform:
+    scale(1.035)
+    translateZ(0);
+
+  transition:
+    opacity 300ms ease,
+    transform 420ms
+      cubic-bezier(.2, .8, .2, 1);
+}
+
+.artwork img.loaded {
+  opacity: 1;
+  transform:
+    scale(1)
+    translateZ(0);
+}
+
+.play-badge {
+  transition:
+    transform var(--motion-fast),
+    background-color var(--motion-fast),
+    color var(--motion-fast),
+    opacity var(--motion-fast);
+}
+
+.music-card.playing .play-badge {
+  animation:
+    playingBadgePulse
+    1.8s
+    ease-in-out
+    infinite;
+}
+
+@keyframes playingBadgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@media (hover: hover) {
+  .music-card:hover .artwork img {
+    transform:
+      scale(1.045)
+      translateZ(0);
+  }
+
+  .music-card:hover .play-badge {
+    transform: scale(1.08);
+  }
+}
+
+/* Skeleton loading */
+
+.skeleton-card {
+  animation:
+    skeletonEnter
+    300ms
+    ease-out
+    both;
+}
+
+@keyframes skeletonEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mini-player */
+
+.v3-mini-player {
+  transform: translateZ(0);
+
+  animation:
+    miniPlayerEnter
+    380ms
+    cubic-bezier(.16, .82, .24, 1)
+    both;
+}
+
+.v3-mini-info img {
+  transform: translateZ(0);
+
+  transition:
+    transform var(--motion-normal);
+}
+
+.v3-mini-info:active img {
+  transform:
+    scale(0.94)
+    translateZ(0);
+}
+
+.v3-mini-controls button,
+.v3-mini-queue {
+  transition:
+    transform var(--motion-fast),
+    background-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.v3-mini-controls button:active,
+.v3-mini-queue:active {
+  transform: scale(0.9);
+}
+
+@keyframes miniPlayerEnter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(28px)
+      scale(0.975);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+/* Maximized player */
+
+.v3-full-player {
+  will-change: auto;
+
+  transition:
+    transform var(--motion-player),
+    opacity 280ms ease,
+    visibility 0s linear 380ms;
+}
+
+.v3-full-player.open {
+  will-change:
+    transform,
+    opacity;
+
+  transition:
+    transform var(--motion-player),
+    opacity 280ms ease,
+    visibility 0s;
+}
+
+.v3-full-player.dragging {
+  will-change:
+    transform,
+    opacity;
+}
+
+.v3-full-background {
+  inset: 0;
+  opacity: 0.14;
+}
+
+.v3-full-background::after {
+  backdrop-filter: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 11, 18, 0.28),
+      #080b12 82%
+    );
+}
+
+.v3-full-background img {
+  filter: none;
+
+  opacity: 0.42;
+
+  transform:
+    scale(1.035)
+    translateZ(0);
+}
+
+.v3-full-player.open
+.v3-full-art-shell {
+  animation:
+    fullArtworkEnter
+    460ms
+    40ms
+    cubic-bezier(.16, .82, .24, 1)
+    both;
+}
+
+.v3-full-player.open
+.v3-full-details {
+  animation:
+    fullDetailsEnter
+    440ms
+    90ms
+    cubic-bezier(.16, .82, .24, 1)
+    both;
+}
+
+@keyframes fullArtworkEnter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateX(-22px)
+      scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(0)
+      scale(1);
+  }
+}
+
+@keyframes fullDetailsEnter {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.v3-full-art-shell::before {
+  opacity: 0.55;
+  filter: blur(28px);
+}
+
+.v3-full-art {
+  transform: translateZ(0);
+
+  transition:
+    transform var(--motion-normal);
+}
+
+.v3-full-art:active {
+  transform:
+    scale(0.985)
+    translateZ(0);
+}
+
+.v3-full-controls button,
+.v3-full-tools button,
+.v3-minimize-button,
+.v3-full-queue-button {
+  transition:
+    transform var(--motion-fast),
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.v3-full-controls button:active,
+.v3-full-tools button:active,
+.v3-minimize-button:active,
+.v3-full-queue-button:active {
+  transform: scale(0.9);
+}
+
+.v3-visualizer {
+  contain: paint;
+
+  transform: translateZ(0);
+}
+
+.v3-visualizer i {
+  will-change: transform;
+}
+
+/* Queue */
+
+.v3-queue-scrim {
+  transition:
+    opacity 220ms ease,
+    visibility 0s linear 220ms;
+}
+
+.v3-queue-scrim.open {
+  transition:
+    opacity 220ms ease,
+    visibility 0s;
+}
+
+.v3-queue-drawer {
+  transition:
+    transform
+    300ms
+    cubic-bezier(.16, .82, .24, 1);
+}
+
+.v3-queue-item {
+  transition:
+    transform var(--motion-fast),
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+
+.v3-queue-item:active {
+  transform: scale(0.98);
+}
+
+/* Mobile performance */
+
+@media (max-width: 760px) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .topbar {
+    backdrop-filter: none;
+
+    background:
+      rgba(7, 10, 16, 0.98);
+  }
+
+  .music-card {
+    contain-intrinsic-size:
+      auto 225px;
+  }
+
+  .v3-full-player {
+    background:
+      radial-gradient(
+        circle at 50% 12%,
+        rgba(67, 216, 193, 0.11),
+        transparent 42%
+      ),
+      #080b12;
+  }
+
+  .v3-full-background {
+    display: none;
+  }
+
+  .v3-full-art-shell::before {
+    display: none;
+  }
+
+  .v3-full-player.open
+  .v3-full-art-shell {
+    animation-name:
+      mobileArtworkEnter;
+  }
+
+  .v3-full-player.open
+  .v3-full-details {
+    animation-name:
+      mobileDetailsEnter;
+  }
+
+  @keyframes mobileArtworkEnter {
+    from {
+      opacity: 0;
+
+      transform:
+        translateY(20px)
+        scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+
+      transform:
+        translateY(0)
+        scale(1);
+    }
+  }
+
+  @keyframes mobileDetailsEnter {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .music-card,
+  .hero,
+  .hero h1,
+  .hero > p,
+  .hero-features,
+  .tabs,
+  .section-header,
+  .v3-mini-player,
+  .v3-full-player.open
+  .v3-full-art-shell,
+  .v3-full-player.open
+  .v3-full-details {
+    animation: none !important;
+  }
+
+  .artwork img {
+    opacity: 1;
+    transform: none;
+  }
+}

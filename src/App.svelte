@@ -63,6 +63,8 @@
 
   let requestController = null;
 
+  const viewCache = new Map();
+
   $: isHomeView =
     homeViews.includes(activeView);
 
@@ -129,6 +131,27 @@
     items = [];
   }
 
+  function showCachedView(view) {
+    const cached =
+      viewCache.get(view);
+
+    if (!cached) {
+      return false;
+    }
+
+    pageTitle =
+      cached.pageTitle;
+
+    pageDescription =
+      cached.pageDescription;
+
+    items = [...cached.items];
+    loading = false;
+    pageError = '';
+
+    return true;
+  }
+
   async function loadView(view) {
     if (!homeViews.includes(view)) {
       view = 'trending';
@@ -137,6 +160,10 @@
     activeView = view;
     browseView = view;
     searchQuery = '';
+
+    if (showCachedView(view)) {
+      return;
+    }
 
     setLoadingState();
 
@@ -169,6 +196,15 @@
         items =
           await getPlaylists(signal);
       }
+
+      viewCache.set(
+        view,
+        {
+          pageTitle,
+          pageDescription,
+          items: [...items]
+        }
+      );
     } catch (error) {
       if (error?.name !== 'AbortError') {
         pageError =

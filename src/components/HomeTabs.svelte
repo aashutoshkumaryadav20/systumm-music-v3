@@ -14,10 +14,6 @@
     {
       id: 'playlists',
       label: '▤ Playlists'
-    },
-    {
-      id: 'favourites',
-      label: '♥ Favourites'
     }
   ];
 </script>

@@ -33,7 +33,7 @@ const initialState = {
 
   currentTime: 0,
   duration: 0,
-  volume: 0.9,
+  volume: 1,
 
   shuffle: false,
   repeat: 'off',
@@ -48,6 +48,7 @@ export const player = writable(
 let initialized = false;
 let removeListeners = [];
 let lastPositionUpdate = 0;
+let lastUiUpdate = 0;
 
 function patch(values) {
   player.update((state) => ({
@@ -68,7 +69,7 @@ function readSavedVolume() {
   try {
     const saved = Number(
       localStorage.getItem(
-        'systumm-volume'
+        'systumm-volume-v2'
       )
     );
 
@@ -82,13 +83,13 @@ function readSavedVolume() {
     // Local storage may be blocked.
   }
 
-  return 0.9;
+  return 1;
 }
 
 function saveVolume(volume) {
   try {
     localStorage.setItem(
-      'systumm-volume',
+      'systumm-volume-v2',
       String(volume)
     );
   } catch {
@@ -201,18 +202,29 @@ export function initializePlayer() {
     listenToAudio(
       'timeupdate',
       () => {
-        patch({
-          currentTime:
-            audio.currentTime || 0,
-
-          duration:
-            Number.isFinite(audio.duration)
-              ? audio.duration
-              : 0
-        });
-
         const now =
           performance.now();
+
+        /*
+         * Avoid updating every subscribed Svelte
+         * component on every native timeupdate event.
+         */
+        if (
+          now - lastUiUpdate >= 250 ||
+          audio.ended
+        ) {
+          lastUiUpdate = now;
+
+          patch({
+            currentTime:
+              audio.currentTime || 0,
+
+            duration:
+              Number.isFinite(audio.duration)
+                ? audio.duration
+                : 0
+          });
+        }
 
         if (
           now - lastPositionUpdate >=

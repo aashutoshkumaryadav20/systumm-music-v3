@@ -20,8 +20,6 @@
     titleOf
   } from '../../lib/music.js';
 
-  import LikeButton from './LikeButton.svelte';
-
   import {
     retryPlayback
   } from '../../services/playbackRecovery.js';
@@ -39,7 +37,7 @@
   let pointerId = null;
 
   const visualizerBars = Array.from(
-    { length: 22 },
+    { length: 12 },
     (_, index) => ({
       delay: `${(index % 7) * -0.08}s`,
       peak: 0.35 + ((index * 17) % 60) / 100
@@ -214,7 +212,9 @@
   class:dragging
   aria-hidden={!open}
   aria-label="Maximized music player"
-  style={`transform:${dragTransform};opacity:${dragOpacity}`}
+  style={dragging
+    ? `transform:${dragTransform};opacity:${dragOpacity}`
+    : ''}
 >
   {#if track}
     <div class="v3-full-background">
@@ -392,7 +392,6 @@
             ☷ Queue
           </button>
 
-          <LikeButton track={track} large />
         </div>
 
         <div class="v3-full-volume">

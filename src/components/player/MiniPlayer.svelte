@@ -15,8 +15,6 @@
     titleOf
   } from '../../lib/music.js';
 
-  import LikeButton from './LikeButton.svelte';
-
   import {
     retryPlayback
   } from '../../services/playbackRecovery.js';
@@ -118,8 +116,6 @@
 
       <span>{formatTime($player.duration)}</span>
     </div>
-
-    <LikeButton {track} />
 
     <button
       class="v3-mini-queue"

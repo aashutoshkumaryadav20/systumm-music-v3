@@ -17,6 +17,7 @@
   {#each items as item, index (itemKey(item, index))}
     <MusicCard
       {item}
+      {index}
       {currentTrack}
       {onOpen}
     />

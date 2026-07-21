@@ -1,71 +1,19 @@
-.v3-like-button {
-  display: grid;
-  place-items: center;
-
-  width: 46px;
-  height: 44px;
-  min-width: 46px;
-
-  border: 1px solid var(--line);
-  border-radius: 12px;
-
-  background: var(--surface-light);
-  color: var(--muted);
-
-  font-size: 1.2rem;
-  cursor: pointer;
-
-  transition:
-    transform 0.12s ease,
-    color 0.18s ease,
-    background 0.18s ease,
-    border-color 0.18s ease;
-}
-
-.v3-like-button:hover {
-  color: var(--danger);
-  border-color:
-    rgba(255, 116, 127, 0.45);
-}
-
-.v3-like-button:active {
-  transform: scale(0.9);
-}
-
-.v3-like-button.liked {
-  color: var(--danger);
-
-  border-color:
-    rgba(255, 116, 127, 0.5);
-
-  background:
-    rgba(255, 116, 127, 0.1);
-
-  text-shadow:
-    0 0 15px
-    rgba(255, 116, 127, 0.45);
-}
-
-.v3-like-button.large {
-  width: auto;
-  min-width: 44px;
-  height: 43px;
-
-  font-size: 1.15rem;
-}
+/*
+ * Player recovery layout.
+ * Favourites have been completely removed.
+ */
 
 .v3-mini-player {
   grid-template-columns:
     minmax(190px, 1fr)
     auto
     minmax(220px, 1fr)
-    auto
     auto;
 }
 
 .v3-full-tools {
   grid-template-columns:
-    repeat(4, 1fr);
+    repeat(3, minmax(0, 1fr));
 }
 
 .v3-player-error {
@@ -109,34 +57,24 @@
 @media (max-width: 760px) {
   .tabs {
     grid-template-columns:
-      repeat(4, minmax(0, 1fr));
+      repeat(3, minmax(0, 1fr));
   }
 
   .tabs button {
-    font-size: 0.64rem;
-    padding-inline: 3px;
+    font-size: 0.68rem;
+    padding-inline: 4px;
   }
 
   .v3-mini-player {
     grid-template-columns:
       minmax(0, 1fr)
       auto
-      auto
       auto;
-  }
-
-  .v3-mini-player .v3-like-button {
-    width: 43px;
-    min-width: 43px;
   }
 
   .v3-full-tools {
     grid-template-columns:
-      repeat(2, 1fr);
-  }
-
-  .v3-like-button.large {
-    width: 100%;
+      repeat(3, minmax(0, 1fr));
   }
 
   .v3-player-error {
@@ -149,15 +87,14 @@
 
 @media (max-width: 380px) {
   .tabs button {
-    font-size: 0.57rem;
-  }
-
-  .v3-mini-player .v3-like-button {
-    width: 40px;
-    min-width: 40px;
+    font-size: 0.61rem;
   }
 
   .v3-mini-queue {
     width: 40px;
+  }
+
+  .v3-full-tools button {
+    font-size: 0.64rem;
   }
 }

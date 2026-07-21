@@ -8,8 +8,11 @@
   } from '../lib/music.js';
 
   export let item;
+  export let index = 0;
   export let currentTrack = null;
   export let onOpen = () => {};
+
+  let imageLoaded = false;
 
   $: itemType = typeOf(item);
 
@@ -22,12 +25,18 @@
       currentTrack?.url === item?.url
     )
   );
+
+  $: animationIndex = Math.min(
+    Number(index) || 0,
+    12
+  );
 </script>
 
 <button
   class="music-card"
   class:playing
   type="button"
+  style={`--card-index:${animationIndex}`}
   aria-label={
     isSong(item)
       ? `Play ${titleOf(item)}`
@@ -38,11 +47,15 @@
   <div class="artwork">
     {#if imageOf(item)}
       <img
+        class:loaded={imageLoaded}
         src={imageOf(item)}
         alt=""
         loading="lazy"
         decoding="async"
         referrerpolicy="no-referrer"
+        onload={() => {
+          imageLoaded = true;
+        }}
       >
     {:else}
       <span

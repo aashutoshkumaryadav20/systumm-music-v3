@@ -19,7 +19,7 @@ import {
 } from './storage.js';
 
 const PLAYER_STATE_KEY =
-  'systumm-music-player-state-v1';
+  'systumm-music-player-state-v2';
 
 let unsubscribe = null;
 let saveTimer = null;
@@ -54,7 +54,7 @@ function saveSnapshot(state) {
     volume:
       Number.isFinite(state.volume)
         ? state.volume
-        : 0.9,
+        : 1,
 
     shuffle: Boolean(state.shuffle),
 
@@ -153,13 +153,16 @@ export function restorePlayerState() {
   const currentTrack =
     queue[currentIndex];
 
-  const volume = Math.max(
-    0,
-    Math.min(
-      1,
-      Number(snapshot.volume) || 0.9
-    )
-  );
+  const storedVolume =
+    Number(snapshot.volume);
+
+  const volume =
+    Number.isFinite(storedVolume)
+      ? Math.max(
+          0,
+          Math.min(1, storedVolume)
+        )
+      : 1;
 
   setAudioVolume(volume);
   setAudioSource(currentTrack.url);
