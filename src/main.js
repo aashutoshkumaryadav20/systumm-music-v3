@@ -1,11 +1,18 @@
-import { mount } from 'svelte';
+import {
+  mount
+} from 'svelte';
 
 import App from './App.svelte';
+
+import {
+  registerPwa
+} from './services/pwa.js';
 
 import './app.css';
 import './phase2.css';
 import './phase3.css';
 import './phase3b.css';
+import './phase4.css';
 
 const target =
   document.getElementById('app');
@@ -16,6 +23,16 @@ if (!target) {
   );
 }
 
-mount(App, {
-  target
+mount(
+  App,
+  {
+    target
+  }
+);
+
+registerPwa().catch((error) => {
+  console.warn(
+    'PWA registration failed:',
+    error
+  );
 });

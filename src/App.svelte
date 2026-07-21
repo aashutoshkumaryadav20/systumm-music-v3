@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   import Header from './components/Header.svelte';
+  import InstallApp from './components/InstallApp.svelte';
   import HomeTabs from './components/HomeTabs.svelte';
   import MusicGrid from './components/MusicGrid.svelte';
   import PlayerShell from './components/player/PlayerShell.svelte';
@@ -319,6 +320,8 @@
   onHome={() => loadView('trending')}
   onSearch={submitSearch}
 />
+
+<InstallApp />
 
 <main>
   {#if isHomeView}
