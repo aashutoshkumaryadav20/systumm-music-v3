@@ -1,6 +1,5 @@
 /*
- * Homepage page-fold animation.
- * This overrides the previous fade/slide system.
+ * Restored simple fast horizontal transition.
  */
 
 .home-swipe-shell {
@@ -9,18 +8,16 @@
   width: 100%;
   min-width: 0;
 
-  perspective: 1200px;
   isolation: isolate;
 }
 
 .home-swipe-shell::before,
-.home-swipe-shell::after {
+.home-swipe-shell::after,
+.home-swipe-curtain {
   display: none !important;
 }
 
 .home-swipe-viewport {
-  position: relative;
-
   width: 100%;
   min-width: 0;
 
@@ -31,21 +28,13 @@
 }
 
 .home-swipe-stage {
-  position: relative;
-  z-index: 1;
-
   width: 100%;
   min-width: 0;
 
   transform:
-    perspective(1100px)
-    translate3d(0, 0, 0)
-    rotateY(0deg)
-    scale(1);
+    translate3d(0, 0, 0);
 
-  transform-origin: center;
   backface-visibility: hidden;
-
   will-change: auto;
 }
 
@@ -55,88 +44,42 @@
 .home-swipe-stage {
   will-change:
     transform,
-    clip-path;
+    opacity;
 }
 
-.home-swipe-curtain {
-  position: absolute;
-  z-index: 8;
+.home-page-indicator {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 
-  top: 0;
-  bottom: 0;
-  left: -18%;
+  width: 100%;
+  height: 17px;
 
-  width: 34%;
-
-  opacity: 0;
+  margin:
+    -3px 0
+    3px;
 
   pointer-events: none;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(114, 239, 128, 0.08),
-      rgba(67, 216, 193, 0.6),
-      rgba(255, 255, 255, 0.48),
-      rgba(67, 216, 193, 0.24),
-      transparent
-    );
-
-  filter: blur(1px);
-
-  transform:
-    translate3d(-110%, 0, 0);
-
-  box-shadow:
-    0 0 28px
-    rgba(67, 216, 193, 0.22);
 }
 
-/* Tabs remain easy to click */
-
-.tabs {
-  position: relative;
-  z-index: 2;
-
-  overflow: hidden;
-
-  border-radius: 16px;
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(17, 23, 34, 0.93),
-      rgba(25, 34, 49, 0.84)
-    );
-}
-
-.tabs button {
-  position: relative;
-  z-index: 1;
-
-  overflow: hidden;
-
-  transition:
-    transform 120ms
-      cubic-bezier(.2, .8, .2, 1),
-    color 150ms ease,
-    background-color 150ms ease,
-    border-color 150ms ease;
-}
-
-.tabs button::after {
-  content: "";
-
-  position: absolute;
-
-  right: 18%;
-  bottom: 4px;
-  left: 18%;
-
-  height: 3px;
+.home-page-indicator span {
+  width: 7px;
+  height: 4px;
 
   border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.16);
+
+  transition:
+    width 130ms
+      cubic-bezier(.2, .8, .2, 1),
+    background-color 130ms ease;
+}
+
+.home-page-indicator span.active {
+  width: 25px;
 
   background:
     linear-gradient(
@@ -144,45 +87,35 @@
       var(--accent),
       var(--accent-secondary)
     );
-
-  opacity: 0;
-
-  transform:
-    scaleX(0);
-
-  transition:
-    opacity 150ms ease,
-    transform 180ms
-      cubic-bezier(.2, .8, .2, 1);
 }
 
-.tabs button.active::after {
-  opacity: 1;
-  transform: scaleX(1);
+/* Tabs remain fully clickable */
+
+.tabs {
+  position: relative;
+  z-index: 2;
+
+  padding: 4px;
+
+  border-radius: 15px;
+
+  background:
+    rgba(17, 23, 34, 0.78);
+}
+
+.tabs button {
+  transition:
+    transform 110ms
+      cubic-bezier(.2, .8, .2, 1),
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 
 .tabs button.active {
   transform:
-    translateY(-1px);
-
-  box-shadow:
-    inset 0 0 0 1px
-    rgba(114, 239, 128, 0.28);
-}
-
-/* Remove previous homepage progress indicator */
-
-.home-page-indicator {
-  display: none !important;
-}
-
-/* Keep the page-fold animation clean */
-
-.home-swipe-stage .hero,
-.home-swipe-stage .tabs,
-.home-swipe-stage .section-header,
-.home-swipe-stage .music-grid {
-  backface-visibility: hidden;
+    translateY(-1px)
+    scale(1.01);
 }
 
 .home-swipe-shell.dragging
@@ -194,7 +127,10 @@
   transition: none !important;
 }
 
-/* Mini-player: Previous + Play + Next always visible */
+/*
+ * Previous, Play/Pause and Next are always shown
+ * in the Android/mobile mini-player.
+ */
 
 @media (max-width: 760px) {
   .v3-mini-player {
@@ -275,8 +211,9 @@
     min-width: 40px;
   }
 
-  .home-swipe-curtain {
-    width: 42%;
+  .home-page-indicator {
+    height: 14px;
+    margin-bottom: 2px;
   }
 }
 
@@ -308,12 +245,6 @@
     height: 40px;
   }
 
-  .v3-mini-info img,
-  .v3-mini-placeholder {
-    width: 38px;
-    height: 38px;
-  }
-
   .v3-mini-queue {
     width: 37px;
     min-width: 37px;
@@ -322,7 +253,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .home-swipe-stage,
-  .home-swipe-curtain {
+  .home-page-indicator span {
     animation: none !important;
     transition: none !important;
   }

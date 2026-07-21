@@ -11,10 +11,8 @@
   export let onNavigate = () => {};
   export let onSwipeDetected = () => {};
 
-  let shell = null;
   let viewport = null;
   let stage = null;
-  let curtain = null;
 
   let dragging = false;
   let navigating = false;
@@ -29,12 +27,19 @@
   let rawX = 0;
   let visibleX = 0;
 
-  let renderFrame = 0;
   let pendingX = 0;
+  let renderFrame = 0;
 
-  let swipeDirection = '';
-
+  let direction = '';
   let removeClickBlock = null;
+
+  $: safeActiveIndex = Math.max(
+    0,
+    Math.min(
+      pageCount - 1,
+      activeIndex
+    )
+  );
 
   function reducedMotion() {
     return window.matchMedia(
@@ -42,7 +47,7 @@
     ).matches;
   }
 
-  function clearRenderFrame() {
+  function stopRenderFrame() {
     if (!renderFrame) {
       return;
     }
@@ -55,62 +60,22 @@
   }
 
   function clearStageStyles() {
-    clearRenderFrame();
+    stopRenderFrame();
 
-    if (stage) {
-      stage.style.removeProperty(
-        'transform'
-      );
-
-      stage.style.removeProperty(
-        'opacity'
-      );
-
-      stage.style.removeProperty(
-        'clip-path'
-      );
+    if (!stage) {
+      return;
     }
 
-    shell?.style.removeProperty(
-      '--home-swipe-progress'
+    stage.style.removeProperty(
+      'transform'
+    );
+
+    stage.style.removeProperty(
+      'opacity'
     );
   }
 
-  function stageTransform(x) {
-    const width =
-      viewport?.clientWidth ||
-      window.innerWidth ||
-      360;
-
-    const progress = Math.min(
-      1,
-      Math.abs(x) / width
-    );
-
-    const rotation =
-      Math.max(
-        -4.5,
-        Math.min(
-          4.5,
-          (x / width) * 8
-        )
-      );
-
-    const movement =
-      x * 0.23;
-
-    const scale =
-      1 - progress * 0.018;
-
-    return [
-      'perspective(1100px)',
-      `translate3d(${movement}px,0,0)`,
-      `rotateY(${rotation}deg)`,
-      `scale(${scale})`
-    ].join(' ');
-  }
-
-  function applyDragPosition(x) {
+  function applyPosition(x) {
     if (!stage) {
       return;
     }
@@ -126,15 +91,15 @@
     );
 
     stage.style.transform =
-      stageTransform(x);
+      `translate3d(${x}px,0,0) scale(${1 - progress * 0.012})`;
 
-    shell?.style.setProperty(
-      '--home-swipe-progress',
-      String(progress)
-    );
+    stage.style.opacity =
+      String(
+        1 - progress * 0.18
+      );
   }
 
-  function scheduleDragPosition(x) {
+  function schedulePosition(x) {
     pendingX = x;
 
     if (renderFrame) {
@@ -145,127 +110,75 @@
       requestAnimationFrame(() => {
         renderFrame = 0;
 
-        applyDragPosition(
+        applyPosition(
           pendingX
         );
       });
   }
 
-  async function playAnimation(
-    element,
+  async function animateStage(
     keyframes,
-    options
+    duration,
+    easing
   ) {
+    stopRenderFrame();
+
     if (
-      !element ||
-      typeof element.animate !==
+      !stage ||
+      typeof stage.animate !==
         'function' ||
       reducedMotion()
     ) {
-      return null;
+      clearStageStyles();
+      return;
     }
 
     const animation =
-      element.animate(
+      stage.animate(
         keyframes,
         {
-          fill: 'both',
-          ...options
+          duration,
+          easing,
+          fill: 'both'
         }
       );
 
     try {
       await animation.finished;
     } catch {
-      // A later interaction may cancel it.
+      // A new interaction may cancel it.
+    } finally {
+      animation.cancel();
     }
-
-    return animation;
   }
 
   async function returnToCentre(
     fromX
   ) {
-    const animation =
-      await playAnimation(
-        stage,
-        [
-          {
-            transform:
-              stageTransform(fromX)
-          },
-          {
-            transform:
-              'perspective(1100px) translate3d(0,0,0) rotateY(0deg) scale(1)'
-          }
-        ],
+    await animateStage(
+      [
         {
-          duration: 115,
-          easing:
-            'cubic-bezier(.2,.85,.25,1)'
+          transform:
+            `translate3d(${fromX}px,0,0) scale(.99)`,
+          opacity: 0.9
+        },
+        {
+          transform:
+            'translate3d(0,0,0) scale(1)',
+          opacity: 1
         }
-      );
+      ],
+      105,
+      'cubic-bezier(.2,.8,.2,1)'
+    );
 
-    animation?.cancel();
     clearStageStyles();
-  }
-
-  function playCurtain(direction) {
-    if (
-      !curtain ||
-      typeof curtain.animate !==
-        'function' ||
-      reducedMotion()
-    ) {
-      return;
-    }
-
-    const start =
-      direction === 'next'
-        ? '105%'
-        : '-105%';
-
-    const finish =
-      direction === 'next'
-        ? '-105%'
-        : '105%';
-
-    const animation =
-      curtain.animate(
-        [
-          {
-            transform:
-              `translate3d(${start},0,0)`,
-            opacity: 0
-          },
-          {
-            opacity: 0.72,
-            offset: 0.42
-          },
-          {
-            transform:
-              `translate3d(${finish},0,0)`,
-            opacity: 0
-          }
-        ],
-        {
-          duration: 225,
-          easing:
-            'cubic-bezier(.2,.8,.2,1)'
-        }
-      );
-
-    animation.finished
-      .catch(() => {})
-      .finally(() => {
-        animation.cancel();
-      });
   }
 
   function blockGestureClick() {
     removeClickBlock?.();
 
-    let timer = null;
+    let timeoutId = null;
 
     const blockClick = (event) => {
       event.preventDefault();
@@ -282,11 +195,10 @@
         true
       );
 
-      clearTimeout(timer);
+      clearTimeout(timeoutId);
 
       if (
-        removeClickBlock ===
-        cleanup
+        removeClickBlock === cleanup
       ) {
         removeClickBlock = null;
       }
@@ -298,9 +210,9 @@
       true
     );
 
-    timer = setTimeout(
+    timeoutId = setTimeout(
       cleanup,
-      450
+      420
     );
 
     removeClickBlock = cleanup;
@@ -329,103 +241,69 @@
     navigating = true;
     onSwipeDetected();
 
-    const movingNext =
+    const movingForward =
       targetIndex > activeIndex;
 
-    const direction =
-      movingNext
+    const exitDirection =
+      movingForward ? -1 : 1;
+
+    direction =
+      movingForward
         ? 'next'
         : 'previous';
 
-    swipeDirection = direction;
+    const width =
+      viewport?.clientWidth ||
+      window.innerWidth ||
+      360;
 
-    const outgoingClip =
-      movingNext
-        ? 'inset(0 100% 0 0 round 20px)'
-        : 'inset(0 0 0 100% round 20px)';
+    const distance = Math.min(
+      105,
+      width * 0.25
+    );
 
-    const incomingClip =
-      movingNext
-        ? 'inset(0 0 0 100% round 20px)'
-        : 'inset(0 100% 0 0 round 20px)';
-
-    const outgoingX =
-      movingNext
-        ? -34
-        : 34;
-
-    const incomingX =
-      -outgoingX;
-
-    playCurtain(direction);
-
-    const outgoing =
-      await playAnimation(
-        stage,
-        [
-          {
-            transform:
-              stageTransform(fromX),
-            clipPath:
-              'inset(0 0 0 0 round 20px)'
-          },
-          {
-            transform: [
-              'perspective(1100px)',
-              `translate3d(${outgoingX}px,0,0)`,
-              `rotateY(${movingNext ? -5 : 5}deg)`,
-              'scale(.982)'
-            ].join(' '),
-
-            clipPath:
-              outgoingClip
-          }
-        ],
+    /*
+     * This is the earlier simple animation
+     * with its duration approximately halved.
+     */
+    await animateStage(
+      [
         {
-          duration: 92,
-          easing:
-            'cubic-bezier(.45,0,1,1)'
+          transform:
+            `translate3d(${fromX}px,0,0) scale(1)`,
+          opacity: 1
+        },
+        {
+          transform:
+            `translate3d(${exitDirection * distance}px,0,0) scale(.985)`,
+          opacity: 0
         }
-      );
+      ],
+      85,
+      'cubic-bezier(.45,0,1,1)'
+    );
 
     const navigationResult =
       onNavigate(targetIndex);
 
     await tick();
 
-    outgoing?.cancel();
-
-    const incoming =
-      await playAnimation(
-        stage,
-        [
-          {
-            transform: [
-              'perspective(1100px)',
-              `translate3d(${incomingX}px,0,0)`,
-              `rotateY(${movingNext ? 5 : -5}deg)`,
-              'scale(.982)'
-            ].join(' '),
-
-            clipPath:
-              incomingClip
-          },
-          {
-            transform:
-              'perspective(1100px) translate3d(0,0,0) rotateY(0deg) scale(1)',
-
-            clipPath:
-              'inset(0 0 0 0 round 20px)'
-          }
-        ],
+    await animateStage(
+      [
         {
-          duration: 145,
-          easing:
-            'cubic-bezier(.12,.82,.22,1)'
+          transform:
+            `translate3d(${-exitDirection * distance * 0.82}px,0,0) scale(.985)`,
+          opacity: 0
+        },
+        {
+          transform:
+            'translate3d(0,0,0) scale(1)',
+          opacity: 1
         }
-      );
-
-    incoming?.cancel();
+      ],
+      140,
+      'cubic-bezier(.16,.82,.24,1)'
+    );
 
     clearStageStyles();
 
@@ -434,7 +312,7 @@
       .catch(() => {});
 
     navigating = false;
-    swipeDirection = '';
+    direction = '';
   }
 
   function startGesture(event) {
@@ -467,6 +345,11 @@
 
     startTime =
       performance.now();
+
+    /*
+     * Pointer capture is intentionally not
+     * started here. Normal taps remain clicks.
+     */
   }
 
   function moveGesture(event) {
@@ -487,8 +370,8 @@
 
     if (!axis) {
       if (
-        Math.abs(differenceX) < 7 &&
-        Math.abs(differenceY) < 7
+        Math.abs(differenceX) < 6 &&
+        Math.abs(differenceY) < 6
       ) {
         return;
       }
@@ -520,7 +403,7 @@
 
     event.preventDefault();
 
-    swipeDirection =
+    direction =
       differenceX < 0
         ? 'next'
         : 'previous';
@@ -536,12 +419,12 @@
     const resistance =
       beforeFirst || afterLast
         ? 0.24
-        : 0.94;
+        : 0.95;
 
     visibleX =
       differenceX * resistance;
 
-    scheduleDragPosition(
+    schedulePosition(
       visibleX
     );
   }
@@ -591,20 +474,20 @@
       finalAxis !== 'horizontal'
     ) {
       clearStageStyles();
-      swipeDirection = '';
+      direction = '';
       return;
     }
 
     const qualifies =
-      Math.abs(finalRawX) >= 38 ||
-      Math.abs(velocity) >= 0.23;
+      Math.abs(finalRawX) >= 40 ||
+      Math.abs(velocity) >= 0.24;
 
     if (!qualifies) {
       await returnToCentre(
         finalVisibleX
       );
 
-      swipeDirection = '';
+      direction = '';
       return;
     }
 
@@ -644,32 +527,38 @@
       clearStageStyles();
     }
 
-    swipeDirection = '';
+    direction = '';
   }
 
   onDestroy(() => {
     removeClickBlock?.();
-    clearRenderFrame();
+    stopRenderFrame();
   });
 </script>
 
 <div
-  bind:this={shell}
   class="home-swipe-shell"
   class:dragging
   class:navigating
   class:direction-next={
-    swipeDirection === 'next'
+    direction === 'next'
   }
   class:direction-previous={
-    swipeDirection === 'previous'
+    direction === 'previous'
   }
 >
   <div
-    bind:this={curtain}
-    class="home-swipe-curtain"
+    class="home-page-indicator"
     aria-hidden="true"
-  ></div>
+  >
+    {#each Array(pageCount) as _, index}
+      <span
+        class:active={
+          index === safeActiveIndex
+        }
+      ></span>
+    {/each}
+  </div>
 
   <div
     bind:this={viewport}

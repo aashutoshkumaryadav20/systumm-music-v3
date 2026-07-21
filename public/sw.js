@@ -1,4 +1,4 @@
-const VERSION = 'systumm-pwa-v6';
+const VERSION = 'systumm-pwa-v7';
 
 const STATIC_CACHE =
   `${VERSION}-static`;
