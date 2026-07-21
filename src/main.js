@@ -14,6 +14,7 @@ import './phase3.css';
 import './phase3b.css';
 import './phase4.css';
 import './phase5.css';
+import './phase6.css';
 
 try {
   localStorage.removeItem(
@@ -25,7 +26,15 @@ try {
   );
 
   localStorage.removeItem(
+    'systumm-volume-v2'
+  );
+
+  localStorage.removeItem(
     'systumm-music-player-state-v1'
+  );
+
+  localStorage.removeItem(
+    'systumm-music-player-state-v2'
   );
 } catch {
   // Storage may be blocked.

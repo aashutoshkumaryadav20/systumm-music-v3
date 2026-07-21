@@ -49,6 +49,7 @@ let initialized = false;
 let removeListeners = [];
 let lastPositionUpdate = 0;
 let lastUiUpdate = 0;
+let firstPlaybackPrepared = false;
 
 function patch(values) {
   player.update((state) => ({
@@ -67,13 +68,25 @@ function isPlayableSong(song) {
 
 function readSavedVolume() {
   try {
-    const saved = Number(
+    const rawValue =
       localStorage.getItem(
-        'systumm-volume-v2'
-      )
-    );
+        'systumm-volume-v3'
+      );
 
-    if (Number.isFinite(saved)) {
+    /*
+     * Number(null) is zero, so the missing-key
+     * case must be checked before conversion.
+     */
+    if (rawValue === null) {
+      return 1;
+    }
+
+    const saved = Number(rawValue);
+
+    if (
+      Number.isFinite(saved) &&
+      saved > 0
+    ) {
       return Math.max(
         0,
         Math.min(1, saved)
@@ -89,12 +102,32 @@ function readSavedVolume() {
 function saveVolume(volume) {
   try {
     localStorage.setItem(
-      'systumm-volume-v2',
+      'systumm-volume-v3',
       String(volume)
     );
   } catch {
     // Ignore storage restrictions.
   }
+}
+
+function prepareFirstPlaybackVolume() {
+  if (firstPlaybackPrepared) {
+    return;
+  }
+
+  firstPlaybackPrepared = true;
+
+  /*
+   * Maximum HTML audio volume.
+   * Android media volume remains controlled
+   * by the phone's physical/system controls.
+   */
+  setAudioVolume(1);
+  saveVolume(1);
+
+  patch({
+    volume: 1
+  });
 }
 
 export function initializePlayer() {
@@ -109,7 +142,7 @@ export function initializePlayer() {
   const savedVolume =
     readSavedVolume();
 
-  audio.volume = savedVolume;
+  setAudioVolume(savedVolume);
 
   patch({
     volume: savedVolume
@@ -350,6 +383,8 @@ export async function playAt(index) {
     error: ''
   });
 
+  prepareFirstPlaybackVolume();
+
   setMediaMetadata(track);
 
   const sourceChanged =
@@ -454,6 +489,8 @@ export async function togglePlayback() {
   }
 
   if (audio.paused) {
+    prepareFirstPlaybackVolume();
+
     try {
       await playAudio();
     } catch {
@@ -614,4 +651,5 @@ export function destroyPlayer() {
 
   removeListeners = [];
   initialized = false;
+  firstPlaybackPrepared = false;
 }

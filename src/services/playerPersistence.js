@@ -19,7 +19,7 @@ import {
 } from './storage.js';
 
 const PLAYER_STATE_KEY =
-  'systumm-music-player-state-v2';
+  'systumm-music-player-state-v3';
 
 let unsubscribe = null;
 let saveTimer = null;
@@ -157,7 +157,8 @@ export function restorePlayerState() {
     Number(snapshot.volume);
 
   const volume =
-    Number.isFinite(storedVolume)
+    Number.isFinite(storedVolume) &&
+    storedVolume > 0
       ? Math.max(
           0,
           Math.min(1, storedVolume)

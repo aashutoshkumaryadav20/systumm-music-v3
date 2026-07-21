@@ -1,9 +1,11 @@
 <script>
+  import { tick } from 'svelte';
+
   import {
     changeVolume,
     cycleRepeat,
     nextTrack,
-    previousTrack,
+    playAt,
     seekTo,
     togglePlayback,
     toggleShuffle
@@ -36,6 +38,9 @@
   let dragY = 0;
   let pointerId = null;
 
+  let trackStage = null;
+  let switchingTrack = false;
+
   const visualizerBars = Array.from(
     { length: 12 },
     (_, index) => ({
@@ -67,8 +72,168 @@
     ? Math.max(0.45, 1 - dragY / 450)
     : 1;
 
+  $: horizontalOpacity =
+    dragging &&
+    gestureAxis === 'horizontal'
+      ? Math.max(
+          0.55,
+          1 - Math.abs(dragX) / 520
+        )
+      : 1;
+
+  function reducedMotion() {
+    return window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+  }
+
+  async function animateTrackReturn(fromX) {
+    if (
+      !trackStage ||
+      typeof trackStage.animate !==
+        'function' ||
+      reducedMotion()
+    ) {
+      return;
+    }
+
+    const animation =
+      trackStage.animate(
+        [
+          {
+            transform:
+              `translate3d(${fromX}px,0,0)`,
+            opacity: 0.8
+          },
+          {
+            transform:
+              'translate3d(0,0,0)',
+            opacity: 1
+          }
+        ],
+        {
+          duration: 210,
+          easing:
+            'cubic-bezier(.2,.8,.2,1)',
+          fill: 'both'
+        }
+      );
+
+    try {
+      await animation.finished;
+    } catch {
+      // Animation can be interrupted.
+    } finally {
+      animation.cancel();
+    }
+  }
+
+  async function switchTrack(
+    direction,
+    fromX = 0
+  ) {
+    if (switchingTrack) {
+      return;
+    }
+
+    switchingTrack = true;
+
+    const movingNext =
+      direction === 'next';
+
+    const outgoingDirection =
+      movingNext ? -1 : 1;
+
+    if (
+      trackStage &&
+      typeof trackStage.animate ===
+        'function' &&
+      !reducedMotion()
+    ) {
+      const outgoing =
+        trackStage.animate(
+          [
+            {
+              transform:
+                `translate3d(${fromX}px,0,0)`,
+              opacity: 1
+            },
+            {
+              transform:
+                `translate3d(${outgoingDirection * 28}%,0,0) scale(.97)`,
+              opacity: 0
+            }
+          ],
+          {
+            duration: 175,
+            easing:
+              'cubic-bezier(.4,0,1,1)',
+            fill: 'forwards'
+          }
+        );
+
+      try {
+        await outgoing.finished;
+      } catch {
+        // Continue with the track change.
+      }
+
+      if (movingNext) {
+        await nextTrack(false);
+      } else {
+        await playAt(
+          $player.currentIndex - 1
+        );
+      }
+
+      await tick();
+      outgoing.cancel();
+
+      const incoming =
+        trackStage.animate(
+          [
+            {
+              transform:
+                `translate3d(${-outgoingDirection * 24}%,0,0) scale(.97)`,
+              opacity: 0
+            },
+            {
+              transform:
+                'translate3d(0,0,0) scale(1)',
+              opacity: 1
+            }
+          ],
+          {
+            duration: 275,
+            easing:
+              'cubic-bezier(.16,.82,.24,1)',
+            fill: 'both'
+          }
+        );
+
+      try {
+        await incoming.finished;
+      } catch {
+        // Animation can be interrupted.
+      } finally {
+        incoming.cancel();
+      }
+    } else {
+      if (movingNext) {
+        await nextTrack(false);
+      } else {
+        await playAt(
+          $player.currentIndex - 1
+        );
+      }
+    }
+
+    switchingTrack = false;
+  }
+
   function startGesture(event) {
     if (
+      switchingTrack ||
       event.target.closest(
         'button, input, a, [data-no-gesture]'
       )
@@ -118,7 +283,7 @@
     }
 
     if (gestureAxis === 'horizontal') {
-      dragX = differenceX * 0.72;
+      dragX = differenceX * 0.86;
       dragY = 0;
     } else if (differenceY > 0) {
       dragY = differenceY;
@@ -159,24 +324,42 @@
     }
 
     if (
-      finalAxis === 'horizontal' &&
-      Math.abs(finalX) > 70
+      finalAxis === 'horizontal'
     ) {
-      if (finalX < 0) {
-        await nextTrack(false);
+      if (Math.abs(finalX) > 70) {
+        await switchTrack(
+          finalX < 0
+            ? 'next'
+            : 'previous',
+          finalX
+        );
       } else {
-        await previousTrack();
+        await animateTrackReturn(
+          finalX
+        );
       }
     }
   }
 
-  function cancelGesture() {
+  async function cancelGesture() {
+    const finalX = dragX;
+    const finalAxis = gestureAxis;
+
     dragging = false;
     pointerId = null;
     gestureAxis = '';
 
     dragX = 0;
     dragY = 0;
+
+    if (
+      finalAxis === 'horizontal' &&
+      Math.abs(finalX) > 1
+    ) {
+      await animateTrackReturn(
+        finalX
+      );
+    }
   }
 
   function handleKeydown(event) {
@@ -192,14 +375,14 @@
       event.key === 'ArrowRight' &&
       !event.target.closest('input')
     ) {
-      nextTrack(false);
+      switchTrack('next');
     }
 
     if (
       event.key === 'ArrowLeft' &&
       !event.target.closest('input')
     ) {
-      previousTrack();
+      switchTrack('previous');
     }
   }
 </script>
@@ -212,9 +395,12 @@
   class:dragging
   aria-hidden={!open}
   aria-label="Maximized music player"
-  style={dragging
-    ? `transform:${dragTransform};opacity:${dragOpacity}`
-    : ''}
+  style={
+    dragging &&
+    gestureAxis === 'vertical'
+      ? `transform:${dragTransform};opacity:${dragOpacity}`
+      : ''
+  }
 >
   {#if track}
     <div class="v3-full-background">
@@ -257,7 +443,16 @@
       </button>
     </header>
 
-    <main class="v3-full-content">
+    <main
+      bind:this={trackStage}
+      class="v3-full-content"
+      style={
+        dragging &&
+        gestureAxis === 'horizontal'
+          ? `transform:translate3d(${dragX}px,0,0);opacity:${horizontalOpacity}`
+          : ''
+      }
+    >
       <div
         class="v3-full-gesture-zone"
         role="presentation"
@@ -335,7 +530,7 @@
           <button
             type="button"
             aria-label="Previous song"
-            onclick={previousTrack}
+            onclick={() => switchTrack('previous')}
           >
             ⏮
           </button>
@@ -358,7 +553,7 @@
           <button
             type="button"
             aria-label="Next song"
-            onclick={() => nextTrack(false)}
+            onclick={() => switchTrack('next')}
           >
             ⏭
           </button>

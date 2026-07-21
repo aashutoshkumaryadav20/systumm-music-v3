@@ -4,6 +4,7 @@
   import Header from './components/Header.svelte';
   import InstallApp from './components/InstallApp.svelte';
   import HomeTabs from './components/HomeTabs.svelte';
+  import HomeSwipe from './components/HomeSwipe.svelte';
   import MusicGrid from './components/MusicGrid.svelte';
   import PlayerShell from './components/player/PlayerShell.svelte';
 
@@ -64,6 +65,9 @@
   let requestController = null;
 
   const viewCache = new Map();
+
+  let homeSwipe = null;
+  let suppressOpenUntil = 0;
 
   $: isHomeView =
     homeViews.includes(activeView);
@@ -216,6 +220,38 @@
     }
   }
 
+  function navigateHomeIndex(index) {
+    const view =
+      homeViews[index];
+
+    if (!view) {
+      return;
+    }
+
+    return loadView(view);
+  }
+
+  function changeHomeView(view) {
+    const targetIndex =
+      homeViews.indexOf(view);
+
+    if (targetIndex < 0) {
+      return;
+    }
+
+    if (
+      homeSwipe &&
+      typeof homeSwipe.navigateTo ===
+        'function'
+    ) {
+      return homeSwipe.navigateTo(
+        targetIndex
+      );
+    }
+
+    return loadView(view);
+  }
+
   async function submitSearch(value) {
     const query = String(
       value || searchQuery
@@ -254,6 +290,13 @@
   }
 
   async function openItem(item) {
+    if (
+      performance.now() <
+      suppressOpenUntil
+    ) {
+      return;
+    }
+
     if (isSong(item)) {
       const surroundingSongs =
         items.filter(isSong);
@@ -385,10 +428,23 @@
 
     <HomeTabs
       active={activeView}
-      onChange={loadView}
+      onChange={changeHomeView}
     />
   {/if}
 
+  <HomeSwipe
+    bind:this={homeSwipe}
+    enabled={isHomeView}
+    activeIndex={
+      homeViews.indexOf(activeView)
+    }
+    pageCount={homeViews.length}
+    onNavigate={navigateHomeIndex}
+    onSwipeDetected={() => {
+      suppressOpenUntil =
+        performance.now() + 500;
+    }}
+  >
   <header class="section-header">
     <div class="section-copy">
       <span class="section-kicker">
@@ -492,6 +548,7 @@
       onOpen={openItem}
     />
   {/if}
+  </HomeSwipe>
 </main>
 
 <PlayerShell />

@@ -1,0 +1,182 @@
+/* Homepage horizontal pager */
+
+.home-swipe-viewport {
+  width: 100%;
+  min-width: 0;
+
+  overflow: hidden;
+
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
+}
+
+.home-swipe-stage {
+  width: 100%;
+  min-width: 0;
+
+  transform: translate3d(0, 0, 0);
+
+  will-change: auto;
+}
+
+.home-swipe-stage.dragging {
+  will-change:
+    transform,
+    opacity;
+
+  user-select: none;
+  cursor: grabbing;
+}
+
+.tabs button {
+  transform-origin: center;
+
+  transition:
+    transform 180ms
+      cubic-bezier(.2, .8, .2, 1),
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.tabs button.active {
+  transform:
+    translateY(-2px)
+    scale(1.025);
+
+  box-shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.28);
+}
+
+/* Full-player track transition */
+
+.v3-full-content {
+  transform:
+    translate3d(0, 0, 0);
+
+  will-change: auto;
+}
+
+.v3-full-player.dragging
+.v3-full-content {
+  will-change:
+    transform,
+    opacity;
+}
+
+.v3-full-gesture-zone {
+  overscroll-behavior:
+    contain;
+
+  touch-action: none;
+}
+
+/*
+ * Prevent the old entry animations from fighting
+ * with the new whole-track horizontal animation.
+ */
+.v3-full-player.open
+.v3-full-art-shell,
+.v3-full-player.open
+.v3-full-details {
+  animation: none;
+}
+
+.v3-full-art-shell,
+.v3-full-details {
+  transform:
+    translate3d(0, 0, 0);
+}
+
+/* More visible loading-to-content transition */
+
+.music-grid {
+  animation:
+    phase6GridEnter
+    300ms
+    cubic-bezier(.2, .8, .2, 1)
+    both;
+}
+
+@keyframes phase6GridEnter {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-header {
+  animation:
+    phase6HeaderEnter
+    280ms
+    cubic-bezier(.2, .8, .2, 1)
+    both;
+}
+
+@keyframes phase6HeaderEnter {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Smooth artwork change */
+
+.v3-full-art {
+  backface-visibility: hidden;
+
+  transform:
+    translate3d(0, 0, 0);
+}
+
+.v3-full-details h2,
+.v3-full-details > p {
+  transition:
+    opacity 180ms ease,
+    transform 220ms
+      cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Mobile tuning */
+
+@media (max-width: 760px) {
+  .home-swipe-viewport {
+    margin-inline: -2px;
+    padding-inline: 2px;
+  }
+
+  .tabs button.active {
+    transform:
+      translateY(-1px)
+      scale(1.02);
+  }
+
+  .v3-full-content {
+    width: 100%;
+  }
+
+  .v3-swipe-hint {
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-swipe-stage,
+  .v3-full-content,
+  .tabs button {
+    animation: none !important;
+    transition: none !important;
+  }
+}
