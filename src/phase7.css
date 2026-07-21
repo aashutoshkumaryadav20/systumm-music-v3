@@ -1,0 +1,284 @@
+/* Fast homepage swipe system */
+
+.home-swipe-shell {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+
+  isolation: isolate;
+}
+
+/* Directional glow */
+
+.home-swipe-shell::before,
+.home-swipe-shell::after {
+  content: "";
+
+  position: absolute;
+  z-index: 4;
+
+  top: 28px;
+  bottom: 8px;
+
+  width: 34px;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  transition:
+    opacity 90ms ease;
+}
+
+.home-swipe-shell::before {
+  left: -7px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(114, 239, 128, 0.2),
+      transparent
+    );
+}
+
+.home-swipe-shell::after {
+  right: -7px;
+
+  background:
+    linear-gradient(
+      270deg,
+      rgba(67, 216, 193, 0.2),
+      transparent
+    );
+}
+
+.home-swipe-shell.swiping-right::before,
+.home-swipe-shell.swiping-left::after {
+  opacity: 1;
+}
+
+/* Compact three-page progress rail */
+
+.home-page-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  width: 100%;
+  height: 18px;
+
+  margin:
+    -4px 0
+    4px;
+
+  pointer-events: none;
+}
+
+.home-page-indicator span {
+  width: 8px;
+  height: 4px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.15);
+
+  transition:
+    width 150ms
+      cubic-bezier(.2, .8, .2, 1),
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.home-page-indicator span.active {
+  width: 28px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--accent),
+      var(--accent-secondary)
+    );
+
+  box-shadow:
+    0 0 13px
+    rgba(114, 239, 128, 0.32);
+}
+
+.home-swipe-viewport {
+  overflow: hidden;
+
+  contain: layout style;
+
+  touch-action: pan-y;
+
+  overscroll-behavior-x:
+    contain;
+}
+
+.home-swipe-stage {
+  transform:
+    translate3d(0, 0, 0);
+
+  backface-visibility:
+    hidden;
+
+  will-change: auto;
+}
+
+.home-swipe-stage.dragging {
+  will-change:
+    transform,
+    opacity;
+
+  user-select: none;
+}
+
+/* Faster tab design */
+
+.tabs {
+  position: relative;
+
+  padding: 5px;
+  margin-bottom: 13px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.065);
+
+  border-radius: 16px;
+
+  background:
+    rgba(17, 23, 34, 0.62);
+}
+
+.tabs button {
+  min-height: 42px;
+
+  border-color: transparent;
+
+  background: transparent;
+
+  transition:
+    transform 110ms
+      cubic-bezier(.2, .8, .2, 1),
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.tabs button.active {
+  border-color:
+    rgba(114, 239, 128, 0.38);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--accent),
+      var(--accent-secondary)
+    );
+
+  color: #07110a;
+
+  transform:
+    translateY(-1px)
+    scale(1.015);
+
+  box-shadow:
+    0 7px 20px
+    rgba(0, 0, 0, 0.25);
+}
+
+/* Content appears quickly after a swipe */
+
+.home-swipe-stage .section-header {
+  animation-duration: 150ms;
+}
+
+.home-swipe-stage .music-grid {
+  animation-duration: 170ms;
+}
+
+.home-swipe-stage .music-card {
+  animation-duration: 230ms;
+
+  animation-delay:
+    calc(
+      var(--card-index, 0) *
+      7ms
+    );
+}
+
+/*
+ * Disable unnecessary hover calculations while
+ * the finger is actively moving the page.
+ */
+.home-swipe-stage.dragging
+.music-card,
+.home-swipe-stage.dragging
+.artwork img,
+.home-swipe-stage.dragging
+.play-badge {
+  transition: none !important;
+}
+
+.home-swipe-shell.navigating
+.home-page-indicator span.active {
+  animation:
+    homeIndicatorPulse
+    225ms
+    ease-out;
+}
+
+@keyframes homeIndicatorPulse {
+  50% {
+    transform: scaleX(1.18);
+  }
+}
+
+@media (max-width: 760px) {
+  .home-page-indicator {
+    height: 15px;
+    margin-bottom: 2px;
+  }
+
+  .tabs {
+    gap: 4px;
+
+    border-radius: 14px;
+
+    padding: 4px;
+  }
+
+  .tabs button {
+    min-height: 40px;
+
+    padding-inline: 3px;
+  }
+
+  .home-swipe-shell::before,
+  .home-swipe-shell::after {
+    width: 25px;
+  }
+
+  .home-swipe-stage .music-card {
+    animation-duration: 190ms;
+
+    animation-delay:
+      calc(
+        var(--card-index, 0) *
+        5ms
+      );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page-indicator span,
+  .tabs button,
+  .home-swipe-stage {
+    transition: none !important;
+    animation: none !important;
+  }
+}

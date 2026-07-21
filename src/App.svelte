@@ -101,7 +101,9 @@
       updateConnection
     );
 
-    loadView('trending');
+    loadView('trending')
+      .then(prefetchHomeViews)
+      .catch(() => {});
 
     return () => {
       requestController?.abort();
@@ -135,6 +137,58 @@
     items = [];
   }
 
+  async function prefetchHomeViews() {
+    const definitions = [
+      {
+        view: 'new-releases',
+        pageTitle: 'Fresh Releases',
+        pageDescription:
+          'Recently released albums and songs.',
+        loader: getNewReleases
+      },
+      {
+        view: 'playlists',
+        pageTitle: 'Hindi Playlists',
+        pageDescription:
+          'Collections selected for every mood.',
+        loader: getPlaylists
+      }
+    ];
+
+    await Promise.allSettled(
+      definitions.map(
+        async (definition) => {
+          if (
+            viewCache.has(
+              definition.view
+            )
+          ) {
+            return;
+          }
+
+          const loadedItems =
+            await definition.loader();
+
+          viewCache.set(
+            definition.view,
+            {
+              pageTitle:
+                definition.pageTitle,
+
+              pageDescription:
+                definition.pageDescription,
+
+              items:
+                Array.isArray(loadedItems)
+                  ? [...loadedItems]
+                  : []
+            }
+          );
+        }
+      )
+    );
+  }
+
   function showCachedView(view) {
     const cached =
       viewCache.get(view);
@@ -164,6 +218,13 @@
     activeView = view;
     browseView = view;
     searchQuery = '';
+
+    /*
+     * A cached view must also cancel a previous
+     * request so stale results cannot overwrite it.
+     */
+    requestController?.abort();
+    requestController = null;
 
     if (showCachedView(view)) {
       return;
