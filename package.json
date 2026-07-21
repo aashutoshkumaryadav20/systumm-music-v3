@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.45.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "svelte": "^5.56.4",
     "vite": "^8.1.1",
