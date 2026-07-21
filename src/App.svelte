@@ -464,6 +464,19 @@
 <InstallApp />
 
 <main>
+  <HomeSwipe
+    bind:this={homeSwipe}
+    enabled={isHomeView}
+    activeIndex={
+      homeViews.indexOf(activeView)
+    }
+    pageCount={homeViews.length}
+    onNavigate={navigateHomeIndex}
+    onSwipeDetected={() => {
+      suppressOpenUntil =
+        performance.now() + 500;
+    }}
+  >
   {#if isHomeView}
     <section class="hero">
       <span>
@@ -493,19 +506,6 @@
     />
   {/if}
 
-  <HomeSwipe
-    bind:this={homeSwipe}
-    enabled={isHomeView}
-    activeIndex={
-      homeViews.indexOf(activeView)
-    }
-    pageCount={homeViews.length}
-    onNavigate={navigateHomeIndex}
-    onSwipeDetected={() => {
-      suppressOpenUntil =
-        performance.now() + 500;
-    }}
-  >
   <header class="section-header">
     <div class="section-copy">
       <span class="section-kicker">

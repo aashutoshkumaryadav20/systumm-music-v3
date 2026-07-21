@@ -1,0 +1,329 @@
+/*
+ * Homepage page-fold animation.
+ * This overrides the previous fade/slide system.
+ */
+
+.home-swipe-shell {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+
+  perspective: 1200px;
+  isolation: isolate;
+}
+
+.home-swipe-shell::before,
+.home-swipe-shell::after {
+  display: none !important;
+}
+
+.home-swipe-viewport {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+
+  overflow: hidden;
+
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
+}
+
+.home-swipe-stage {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  min-width: 0;
+
+  transform:
+    perspective(1100px)
+    translate3d(0, 0, 0)
+    rotateY(0deg)
+    scale(1);
+
+  transform-origin: center;
+  backface-visibility: hidden;
+
+  will-change: auto;
+}
+
+.home-swipe-shell.dragging
+.home-swipe-stage,
+.home-swipe-shell.navigating
+.home-swipe-stage {
+  will-change:
+    transform,
+    clip-path;
+}
+
+.home-swipe-curtain {
+  position: absolute;
+  z-index: 8;
+
+  top: 0;
+  bottom: 0;
+  left: -18%;
+
+  width: 34%;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(114, 239, 128, 0.08),
+      rgba(67, 216, 193, 0.6),
+      rgba(255, 255, 255, 0.48),
+      rgba(67, 216, 193, 0.24),
+      transparent
+    );
+
+  filter: blur(1px);
+
+  transform:
+    translate3d(-110%, 0, 0);
+
+  box-shadow:
+    0 0 28px
+    rgba(67, 216, 193, 0.22);
+}
+
+/* Tabs remain easy to click */
+
+.tabs {
+  position: relative;
+  z-index: 2;
+
+  overflow: hidden;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(17, 23, 34, 0.93),
+      rgba(25, 34, 49, 0.84)
+    );
+}
+
+.tabs button {
+  position: relative;
+  z-index: 1;
+
+  overflow: hidden;
+
+  transition:
+    transform 120ms
+      cubic-bezier(.2, .8, .2, 1),
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.tabs button::after {
+  content: "";
+
+  position: absolute;
+
+  right: 18%;
+  bottom: 4px;
+  left: 18%;
+
+  height: 3px;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--accent),
+      var(--accent-secondary)
+    );
+
+  opacity: 0;
+
+  transform:
+    scaleX(0);
+
+  transition:
+    opacity 150ms ease,
+    transform 180ms
+      cubic-bezier(.2, .8, .2, 1);
+}
+
+.tabs button.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.tabs button.active {
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(114, 239, 128, 0.28);
+}
+
+/* Remove previous homepage progress indicator */
+
+.home-page-indicator {
+  display: none !important;
+}
+
+/* Keep the page-fold animation clean */
+
+.home-swipe-stage .hero,
+.home-swipe-stage .tabs,
+.home-swipe-stage .section-header,
+.home-swipe-stage .music-grid {
+  backface-visibility: hidden;
+}
+
+.home-swipe-shell.dragging
+.music-card,
+.home-swipe-shell.dragging
+.artwork img,
+.home-swipe-shell.dragging
+.tabs button {
+  transition: none !important;
+}
+
+/* Mini-player: Previous + Play + Next always visible */
+
+@media (max-width: 760px) {
+  .v3-mini-player {
+    grid-template-columns:
+      minmax(0, 1fr)
+      112px
+      40px;
+
+    gap: 3px;
+
+    padding-inline: 7px;
+  }
+
+  .v3-mini-controls {
+    display: grid;
+
+    grid-template-columns:
+      34px 42px 34px;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 110px;
+  }
+
+  .v3-mini-controls button,
+  .v3-mini-controls button:first-child,
+  .v3-mini-previous,
+  .v3-mini-next {
+    display: grid !important;
+
+    width: 34px;
+    height: 38px;
+
+    padding: 0;
+
+    font-size: 0.78rem;
+  }
+
+  .v3-mini-controls
+  .v3-mini-main-play {
+    display: grid !important;
+
+    width: 42px;
+    height: 42px;
+
+    font-size: 0.86rem;
+  }
+
+  .v3-mini-info {
+    gap: 7px;
+  }
+
+  .v3-mini-info img,
+  .v3-mini-placeholder {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 10px;
+  }
+
+  .v3-mini-copy strong {
+    font-size: 0.75rem;
+  }
+
+  .v3-mini-copy small {
+    display: none;
+  }
+
+  .v3-track-position {
+    margin-top: 2px;
+
+    font-size: 0.49rem;
+  }
+
+  .v3-mini-queue {
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .home-swipe-curtain {
+    width: 42%;
+  }
+}
+
+@media (max-width: 350px) {
+  .v3-mini-player {
+    grid-template-columns:
+      minmax(0, 1fr)
+      102px
+      37px;
+  }
+
+  .v3-mini-controls {
+    grid-template-columns:
+      31px 40px 31px;
+
+    width: 102px;
+  }
+
+  .v3-mini-controls button,
+  .v3-mini-controls button:first-child,
+  .v3-mini-previous,
+  .v3-mini-next {
+    width: 31px;
+  }
+
+  .v3-mini-controls
+  .v3-mini-main-play {
+    width: 40px;
+    height: 40px;
+  }
+
+  .v3-mini-info img,
+  .v3-mini-placeholder {
+    width: 38px;
+    height: 38px;
+  }
+
+  .v3-mini-queue {
+    width: 37px;
+    min-width: 37px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-swipe-stage,
+  .home-swipe-curtain {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -67,6 +67,7 @@
 
     <div class="v3-mini-controls">
       <button
+        class="v3-mini-previous"
         type="button"
         aria-label="Previous song"
         onclick={previousTrack}
@@ -90,6 +91,7 @@
       </button>
 
       <button
+        class="v3-mini-next"
         type="button"
         aria-label="Next song"
         onclick={() => nextTrack(false)}

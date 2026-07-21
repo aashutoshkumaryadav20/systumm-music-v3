@@ -1,5 +1,6 @@
 <script>
   import {
+    onDestroy,
     tick
   } from 'svelte';
 
@@ -10,8 +11,10 @@
   export let onNavigate = () => {};
   export let onSwipeDetected = () => {};
 
+  let shell = null;
   let viewport = null;
   let stage = null;
+  let curtain = null;
 
   let dragging = false;
   let navigating = false;
@@ -26,18 +29,12 @@
   let rawX = 0;
   let visibleX = 0;
 
+  let renderFrame = 0;
   let pendingX = 0;
-  let animationFrame = 0;
 
   let swipeDirection = '';
 
-  $: safeActiveIndex = Math.max(
-    0,
-    Math.min(
-      pageCount - 1,
-      activeIndex
-    )
-  );
+  let removeClickBlock = null;
 
   function reducedMotion() {
     return window.matchMedia(
@@ -45,17 +42,75 @@
     ).matches;
   }
 
-  function cancelRenderFrame() {
-    if (animationFrame) {
-      cancelAnimationFrame(
-        animationFrame
-      );
-
-      animationFrame = 0;
+  function clearRenderFrame() {
+    if (!renderFrame) {
+      return;
     }
+
+    cancelAnimationFrame(
+      renderFrame
+    );
+
+    renderFrame = 0;
   }
 
-  function applyStagePosition(x) {
+  function clearStageStyles() {
+    clearRenderFrame();
+
+    if (stage) {
+      stage.style.removeProperty(
+        'transform'
+      );
+
+      stage.style.removeProperty(
+        'opacity'
+      );
+
+      stage.style.removeProperty(
+        'clip-path'
+      );
+    }
+
+    shell?.style.removeProperty(
+      '--home-swipe-progress'
+    );
+  }
+
+  function stageTransform(x) {
+    const width =
+      viewport?.clientWidth ||
+      window.innerWidth ||
+      360;
+
+    const progress = Math.min(
+      1,
+      Math.abs(x) / width
+    );
+
+    const rotation =
+      Math.max(
+        -4.5,
+        Math.min(
+          4.5,
+          (x / width) * 8
+        )
+      );
+
+    const movement =
+      x * 0.23;
+
+    const scale =
+      1 - progress * 0.018;
+
+    return [
+      'perspective(1100px)',
+      `translate3d(${movement}px,0,0)`,
+      `rotateY(${rotation}deg)`,
+      `scale(${scale})`
+    ].join(' ');
+  }
+
+  function applyDragPosition(x) {
     if (!stage) {
       return;
     }
@@ -70,116 +125,185 @@
       Math.abs(x) / width
     );
 
-    const scale =
-      1 - progress * 0.018;
-
-    const opacity =
-      1 - progress * 0.24;
-
     stage.style.transform =
-      `translate3d(${x}px,0,0) scale(${scale})`;
+      stageTransform(x);
 
-    stage.style.opacity =
-      String(opacity);
+    shell?.style.setProperty(
+      '--home-swipe-progress',
+      String(progress)
+    );
   }
 
-  function scheduleStagePosition(x) {
+  function scheduleDragPosition(x) {
     pendingX = x;
 
-    if (animationFrame) {
+    if (renderFrame) {
       return;
     }
 
-    animationFrame =
+    renderFrame =
       requestAnimationFrame(() => {
-        animationFrame = 0;
-        applyStagePosition(
+        renderFrame = 0;
+
+        applyDragPosition(
           pendingX
         );
       });
   }
 
-  function clearStageStyle() {
-    cancelRenderFrame();
-
-    if (!stage) {
-      return;
-    }
-
-    stage.style.removeProperty(
-      'transform'
-    );
-
-    stage.style.removeProperty(
-      'opacity'
-    );
-  }
-
-  async function animateStage(
+  async function playAnimation(
+    element,
     keyframes,
-    duration,
-    easing
+    options
   ) {
-    cancelRenderFrame();
-
     if (
-      !stage ||
-      typeof stage.animate !==
+      !element ||
+      typeof element.animate !==
         'function' ||
       reducedMotion()
     ) {
-      clearStageStyle();
-      return;
+      return null;
     }
 
     const animation =
-      stage.animate(
+      element.animate(
         keyframes,
         {
-          duration,
-          easing,
-          fill: 'both'
+          fill: 'both',
+          ...options
         }
       );
 
     try {
       await animation.finished;
     } catch {
-      // A new gesture may interrupt it.
-    } finally {
-      animation.cancel();
+      // A later interaction may cancel it.
     }
+
+    return animation;
   }
 
   async function returnToCentre(
     fromX
   ) {
-    await animateStage(
-      [
+    const animation =
+      await playAnimation(
+        stage,
+        [
+          {
+            transform:
+              stageTransform(fromX)
+          },
+          {
+            transform:
+              'perspective(1100px) translate3d(0,0,0) rotateY(0deg) scale(1)'
+          }
+        ],
         {
-          transform:
-            `translate3d(${fromX}px,0,0) scale(.99)`,
-          opacity: 0.9
-        },
-        {
-          transform:
-            'translate3d(0,0,0) scale(1)',
-          opacity: 1
+          duration: 115,
+          easing:
+            'cubic-bezier(.2,.85,.25,1)'
         }
-      ],
-      120,
-      'cubic-bezier(.2,.8,.2,1)'
-    );
+      );
 
-    clearStageStyle();
+    animation?.cancel();
+    clearStageStyles();
   }
 
-  function vibrateLightly() {
-    try {
-      navigator.vibrate?.(5);
-    } catch {
-      // Vibration is optional.
+  function playCurtain(direction) {
+    if (
+      !curtain ||
+      typeof curtain.animate !==
+        'function' ||
+      reducedMotion()
+    ) {
+      return;
     }
+
+    const start =
+      direction === 'next'
+        ? '105%'
+        : '-105%';
+
+    const finish =
+      direction === 'next'
+        ? '-105%'
+        : '105%';
+
+    const animation =
+      curtain.animate(
+        [
+          {
+            transform:
+              `translate3d(${start},0,0)`,
+            opacity: 0
+          },
+          {
+            opacity: 0.72,
+            offset: 0.42
+          },
+          {
+            transform:
+              `translate3d(${finish},0,0)`,
+            opacity: 0
+          }
+        ],
+        {
+          duration: 225,
+          easing:
+            'cubic-bezier(.2,.8,.2,1)'
+        }
+      );
+
+    animation.finished
+      .catch(() => {})
+      .finally(() => {
+        animation.cancel();
+      });
+  }
+
+  function blockGestureClick() {
+    removeClickBlock?.();
+
+    let timer = null;
+
+    const blockClick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+
+      cleanup();
+    };
+
+    const cleanup = () => {
+      window.removeEventListener(
+        'click',
+        blockClick,
+        true
+      );
+
+      clearTimeout(timer);
+
+      if (
+        removeClickBlock ===
+        cleanup
+      ) {
+        removeClickBlock = null;
+      }
+    };
+
+    window.addEventListener(
+      'click',
+      blockClick,
+      true
+    );
+
+    timer = setTimeout(
+      cleanup,
+      450
+    );
+
+    removeClickBlock = cleanup;
   }
 
   export async function navigateTo(
@@ -205,78 +329,105 @@
     navigating = true;
     onSwipeDetected();
 
-    const movingForward =
+    const movingNext =
       targetIndex > activeIndex;
 
     const direction =
-      movingForward ? -1 : 1;
+      movingNext
+        ? 'next'
+        : 'previous';
 
-    swipeDirection =
-      movingForward
-        ? 'left'
-        : 'right';
+    swipeDirection = direction;
 
-    const width =
-      viewport?.clientWidth ||
-      window.innerWidth ||
-      360;
+    const outgoingClip =
+      movingNext
+        ? 'inset(0 100% 0 0 round 20px)'
+        : 'inset(0 0 0 100% round 20px)';
 
-    const exitDistance = Math.min(
-      105,
-      width * 0.25
-    );
+    const incomingClip =
+      movingNext
+        ? 'inset(0 0 0 100% round 20px)'
+        : 'inset(0 100% 0 0 round 20px)';
 
-    /*
-     * Quick outgoing movement.
-     * We hide only enough to change the page
-     * without a visible content jump.
-     */
-    await animateStage(
-      [
+    const outgoingX =
+      movingNext
+        ? -34
+        : 34;
+
+    const incomingX =
+      -outgoingX;
+
+    playCurtain(direction);
+
+    const outgoing =
+      await playAnimation(
+        stage,
+        [
+          {
+            transform:
+              stageTransform(fromX),
+            clipPath:
+              'inset(0 0 0 0 round 20px)'
+          },
+          {
+            transform: [
+              'perspective(1100px)',
+              `translate3d(${outgoingX}px,0,0)`,
+              `rotateY(${movingNext ? -5 : 5}deg)`,
+              'scale(.982)'
+            ].join(' '),
+
+            clipPath:
+              outgoingClip
+          }
+        ],
         {
-          transform:
-            `translate3d(${fromX}px,0,0) scale(1)`,
-          opacity: 1
-        },
-        {
-          transform:
-            `translate3d(${direction * exitDistance}px,0,0) scale(.985)`,
-          opacity: 0.08
+          duration: 92,
+          easing:
+            'cubic-bezier(.45,0,1,1)'
         }
-      ],
-      85,
-      'cubic-bezier(.45,0,1,1)'
-    );
+      );
 
-    /*
-     * loadView updates cached content or the
-     * loading skeleton synchronously before its
-     * network request finishes.
-     */
     const navigationResult =
       onNavigate(targetIndex);
 
     await tick();
 
-    await animateStage(
-      [
-        {
-          transform:
-            `translate3d(${-direction * exitDistance * 0.82}px,0,0) scale(.985)`,
-          opacity: 0.08
-        },
-        {
-          transform:
-            'translate3d(0,0,0) scale(1)',
-          opacity: 1
-        }
-      ],
-      140,
-      'cubic-bezier(.16,.82,.24,1)'
-    );
+    outgoing?.cancel();
 
-    clearStageStyle();
-    vibrateLightly();
+    const incoming =
+      await playAnimation(
+        stage,
+        [
+          {
+            transform: [
+              'perspective(1100px)',
+              `translate3d(${incomingX}px,0,0)`,
+              `rotateY(${movingNext ? 5 : -5}deg)`,
+              'scale(.982)'
+            ].join(' '),
+
+            clipPath:
+              incomingClip
+          },
+          {
+            transform:
+              'perspective(1100px) translate3d(0,0,0) rotateY(0deg) scale(1)',
+
+            clipPath:
+              'inset(0 0 0 0 round 20px)'
+          }
+        ],
+        {
+          duration: 145,
+          easing:
+            'cubic-bezier(.12,.82,.22,1)'
+        }
+      );
+
+    incoming?.cancel();
+
+    clearStageStyles();
 
     Promise
       .resolve(navigationResult)
@@ -292,7 +443,7 @@
       navigating ||
       event.button !== 0 ||
       event.target.closest(
-        'input, a, .section-actions'
+        'input, textarea, select, a, .section-actions, [data-no-home-swipe]'
       )
     ) {
       return;
@@ -304,6 +455,7 @@
       event.pointerId;
 
     axis = '';
+
     rawX = 0;
     visibleX = 0;
 
@@ -315,11 +467,6 @@
 
     startTime =
       performance.now();
-
-    event.currentTarget
-      .setPointerCapture?.(
-        event.pointerId
-      );
   }
 
   function moveGesture(event) {
@@ -340,8 +487,8 @@
 
     if (!axis) {
       if (
-        Math.abs(differenceX) < 6 &&
-        Math.abs(differenceY) < 6
+        Math.abs(differenceX) < 7 &&
+        Math.abs(differenceY) < 7
       ) {
         return;
       }
@@ -353,6 +500,16 @@
           : 'vertical';
 
       if (axis === 'horizontal') {
+        try {
+          event.currentTarget
+            .setPointerCapture?.(
+              event.pointerId
+            );
+        } catch {
+          // Pointer capture is optional.
+        }
+
+        blockGestureClick();
         onSwipeDetected();
       }
     }
@@ -361,10 +518,12 @@
       return;
     }
 
+    event.preventDefault();
+
     swipeDirection =
       differenceX < 0
-        ? 'left'
-        : 'right';
+        ? 'next'
+        : 'previous';
 
     const beforeFirst =
       activeIndex === 0 &&
@@ -376,13 +535,13 @@
 
     const resistance =
       beforeFirst || afterLast
-        ? 0.22
-        : 0.96;
+        ? 0.24
+        : 0.94;
 
     visibleX =
       differenceX * resistance;
 
-    scheduleStagePosition(
+    scheduleDragPosition(
       visibleX
     );
   }
@@ -401,14 +560,17 @@
           pointerId
         );
     } catch {
-      // Capture may already be released.
+      // It may not have been captured.
     }
 
-    const finalRawX = rawX;
+    const finalRawX =
+      rawX;
+
     const finalVisibleX =
       visibleX;
 
-    const finalAxis = axis;
+    const finalAxis =
+      axis;
 
     const elapsed = Math.max(
       1,
@@ -428,17 +590,14 @@
     if (
       finalAxis !== 'horizontal'
     ) {
-      clearStageStyle();
+      clearStageStyles();
       swipeDirection = '';
       return;
     }
 
-    /*
-     * Short, quick gestures now work.
-     */
     const qualifies =
-      Math.abs(finalRawX) >= 42 ||
-      Math.abs(velocity) >= 0.26;
+      Math.abs(finalRawX) >= 38 ||
+      Math.abs(velocity) >= 0.23;
 
     if (!qualifies) {
       await returnToCentre(
@@ -482,35 +641,35 @@
         finalX
       );
     } else {
-      clearStageStyle();
+      clearStageStyles();
     }
 
     swipeDirection = '';
   }
+
+  onDestroy(() => {
+    removeClickBlock?.();
+    clearRenderFrame();
+  });
 </script>
 
 <div
+  bind:this={shell}
   class="home-swipe-shell"
+  class:dragging
   class:navigating
-  class:swiping-left={
-    swipeDirection === 'left'
+  class:direction-next={
+    swipeDirection === 'next'
   }
-  class:swiping-right={
-    swipeDirection === 'right'
+  class:direction-previous={
+    swipeDirection === 'previous'
   }
 >
   <div
-    class="home-page-indicator"
+    bind:this={curtain}
+    class="home-swipe-curtain"
     aria-hidden="true"
-  >
-    {#each Array(pageCount) as _, index}
-      <span
-        class:active={
-          index === safeActiveIndex
-        }
-      ></span>
-    {/each}
-  </div>
+  ></div>
 
   <div
     bind:this={viewport}
@@ -523,7 +682,6 @@
     <div
       bind:this={stage}
       class="home-swipe-stage"
-      class:dragging
     >
       <slot></slot>
     </div>
