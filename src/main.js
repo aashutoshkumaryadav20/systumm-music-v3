@@ -5,6 +5,7 @@ import App from './App.svelte';
 import './app.css';
 import './phase2.css';
 import './phase3.css';
+import './phase3b.css';
 
 const target =
   document.getElementById('app');

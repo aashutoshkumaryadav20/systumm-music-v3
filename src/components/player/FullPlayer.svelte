@@ -20,6 +20,12 @@
     titleOf
   } from '../../lib/music.js';
 
+  import LikeButton from './LikeButton.svelte';
+
+  import {
+    retryPlayback
+  } from '../../services/playbackRecovery.js';
+
   export let open = false;
   export let onClose = () => {};
   export let onQueue = () => {};
@@ -385,6 +391,8 @@
           >
             ☷ Queue
           </button>
+
+          <LikeButton track={track} large />
         </div>
 
         <div class="v3-full-volume">
@@ -412,9 +420,16 @@
         </div>
 
         {#if $player.error}
-          <p class="v3-full-error">
-            {$player.error}
-          </p>
+          <div class="v3-full-error">
+            <span>{$player.error}</span>
+
+            <button
+              type="button"
+              onclick={retryPlayback}
+            >
+              Retry playback
+            </button>
+          </div>
         {/if}
       </section>
     </main>

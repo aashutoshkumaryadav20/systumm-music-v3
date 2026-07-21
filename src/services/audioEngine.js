@@ -101,3 +101,23 @@ export function listenToAudio(
     );
   };
 }
+
+export function reloadAudioSource(url) {
+  if (
+    typeof url !== 'string' ||
+    !url.startsWith('https://')
+  ) {
+    throw new Error(
+      'A valid HTTPS audio URL is required.'
+    );
+  }
+
+  const absoluteUrl = new URL(
+    url,
+    window.location.href
+  ).href;
+
+  audio.pause();
+  audio.src = absoluteUrl;
+  audio.load();
+}

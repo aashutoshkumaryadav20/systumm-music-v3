@@ -15,6 +15,12 @@
     titleOf
   } from '../../lib/music.js';
 
+  import LikeButton from './LikeButton.svelte';
+
+  import {
+    retryPlayback
+  } from '../../services/playbackRecovery.js';
+
   export let onExpand = () => {};
   export let onQueue = () => {};
 
@@ -113,6 +119,8 @@
       <span>{formatTime($player.duration)}</span>
     </div>
 
+    <LikeButton {track} />
+
     <button
       class="v3-mini-queue"
       type="button"
@@ -124,9 +132,16 @@
     </button>
 
     {#if $player.error}
-      <p class="v3-player-error">
-        {$player.error}
-      </p>
+      <div class="v3-player-error">
+        <span>{$player.error}</span>
+
+        <button
+          type="button"
+          onclick={retryPlayback}
+        >
+          Retry
+        </button>
+      </div>
     {/if}
   </aside>
 {/if}
